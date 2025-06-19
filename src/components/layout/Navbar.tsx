@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { User, Settings, LogOut } from 'lucide-react';
-import Link from 'next/link';
 
 export function Navbar() {
   const { profile, signOut } = useAuth();
@@ -28,9 +27,9 @@ export function Navbar() {
     <nav className="border-b bg-white px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/dashboard" className="text-xl font-bold text-blue-600">
+          <div className="text-xl font-bold text-blue-600">
             Premunia CRM
-          </Link>
+          </div>
           <div className="text-sm text-gray-500">
             Rôle: <span className="font-medium capitalize">{profile.role}</span>
           </div>

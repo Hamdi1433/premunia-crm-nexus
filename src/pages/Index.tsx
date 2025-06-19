@@ -2,22 +2,22 @@
 "use client";
 
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push('/dashboard');
+        navigate('/dashboard');
       } else {
-        router.push('/login');
+        navigate('/login');
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (

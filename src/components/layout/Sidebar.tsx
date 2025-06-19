@@ -15,8 +15,7 @@ import {
   Workflow,
   Mail
 } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, useLocation } from 'react-router-dom';
 
 const adminNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -43,7 +42,7 @@ const conseillerNavItems = [
 
 export function Sidebar() {
   const { profile } = useAuth();
-  const pathname = usePathname();
+  const location = useLocation();
 
   if (!profile) return null;
 
@@ -59,14 +58,14 @@ export function Sidebar() {
               return (
                 <Button
                   key={item.href}
-                  variant={pathname === item.href ? "secondary" : "ghost"}
+                  variant={location.pathname === item.href ? "secondary" : "ghost"}
                   className={cn(
                     "w-full justify-start",
-                    pathname === item.href && "bg-blue-100 text-blue-700"
+                    location.pathname === item.href && "bg-blue-100 text-blue-700"
                   )}
                   asChild
                 >
-                  <Link href={item.href}>
+                  <Link to={item.href}>
                     <Icon className="mr-2 h-4 w-4" />
                     {item.label}
                   </Link>
