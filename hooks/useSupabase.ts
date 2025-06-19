@@ -1,165 +1,255 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/enhanced-client'
-import type { User, Prospect, Opportunity, MarketingCampaign } from '@/lib/supabase/types'
+
+// Types pour l'utilisateur
+export interface User {
+  id: string
+  email: string
+  name: string
+  role: 'admin' | 'manager' | 'commercial'
+  avatar_url?: string
+  created_at: string
+  updated_at: string
+  is_active: boolean
+}
+
+// Types pour les prospects
+export interface Prospect {
+  id: string
+  name: string
+  email: string
+  phone: string
+  company: string
+  age?: number
+  segment: 'Senior' | 'Premium' | 'Standard'
+  score: number
+  status: 'Nouveau' | 'Qualifié' | 'En cours' | 'Converti' | 'Perdu'
+  assigned_to?: string
+  created_at: string
+  updated_at: string
+  source: 'Excel' | 'HubSpot' | 'GoogleSheets' | 'Manuel' | 'Import'
+  revenue_potential: number
+  last_contact?: string
+  notes?: string
+  health_situation?: {
+    current_insurance: string
+    health_issues: string[]
+    budget_range: string
+    urgency_level: 'low' | 'medium' | 'high'
+  }
+}
 
 // Hook pour l'authentification
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Récupérer la session actuelle
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        loadUserProfile(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    })
-
-    // Écouter les changements d'authentification
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (session?.user) {
-        loadUserProfile(session.user.id)
-      } else {
-        setUser(null)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
+    // Vérifier s'il y a un utilisateur en session
+    const savedUser = localStorage.getItem('premunia_user')
+    if (savedUser) {
+      setUser(JSON.parse(savedUser))
+    }
+    setLoading(false)
   }, [])
 
-  const loadUserProfile = async (userId: string) => {
+  const signIn = async (email: string, password: string) => {
     try {
-      // Simuler un profil utilisateur pour le moment
+      setLoading(true)
+      
+      // Simulation de connexion avec différents rôles
+      let role: 'admin' | 'manager' | 'commercial' = 'commercial'
+      let name = 'Utilisateur'
+      
+      if (email.includes('admin')) {
+        role = 'admin'
+        name = 'Admin Premunia'
+      } else if (email.includes('manager')) {
+        role = 'manager'
+        name = 'Manager Commercial'
+      } else {
+        role = 'commercial'
+        name = 'Commercial Senior'
+      }
+
       const mockUser: User = {
-        id: userId,
-        email: session?.user?.email || 'admin@premunia.com',
-        role: 'admin',
-        name: 'Administrateur Premunia',
+        id: '1',
+        email,
+        name,
+        role,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         is_active: true
       }
+
       setUser(mockUser)
+      localStorage.setItem('premunia_user', JSON.stringify(mockUser))
+      
+      return { data: mockUser, error: null }
     } catch (error) {
-      console.error('Erreur lors du chargement du profil:', error)
+      return { data: null, error }
     } finally {
       setLoading(false)
     }
   }
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { data, error }
-  }
-
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    setUser(null)
+    localStorage.removeItem('premunia_user')
+    return { error: null }
   }
 
   return {
     user,
-    session,
     loading,
     signIn,
     signOut,
   }
 }
 
-// Hook pour les prospects
+// Hook pour les prospects avec données de démonstration
 export function useProspects() {
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
-
-  const loadProspects = async () => {
-    if (!user) return
-    
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('prospects')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      setProspects(data || [])
-    } catch (error) {
-      console.error('Erreur lors du chargement des prospects:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   useEffect(() => {
-    if (user) {
-      loadProspects()
-    }
-  }, [user])
+    // Données de démonstration pour les prospects seniors
+    const mockProspects: Prospect[] = [
+      {
+        id: '1',
+        name: 'Pierre Dubois',
+        email: 'pierre.dubois@email.com',
+        phone: '0123456789',
+        company: 'Retraité',
+        age: 68,
+        segment: 'Senior',
+        score: 85,
+        status: 'Qualifié',
+        source: 'Manuel',
+        revenue_potential: 3500,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        health_situation: {
+          current_insurance: 'Mutuelle A',
+          health_issues: ['Optique', 'Dentaire'],
+          budget_range: 'Premium (>100€)',
+          urgency_level: 'medium'
+        }
+      },
+      {
+        id: '2',
+        name: 'Marie Retraite',
+        email: 'marie.retraite@email.com',
+        phone: '0123456790',
+        company: 'Retraitée',
+        age: 72,
+        segment: 'Senior',
+        score: 92,
+        status: 'En cours',
+        source: 'Excel',
+        revenue_potential: 4200,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        health_situation: {
+          current_insurance: 'Sécu uniquement',
+          health_issues: ['Hospitalisation', 'Médecines douces'],
+          budget_range: 'Premium (>100€)',
+          urgency_level: 'high'
+        }
+      },
+      {
+        id: '3',
+        name: 'Jean Actif',
+        email: 'jean.actif@email.com',
+        phone: '0123456791',
+        company: 'Consultant',
+        age: 63,
+        segment: 'Premium',
+        score: 75,
+        status: 'Nouveau',
+        source: 'HubSpot',
+        revenue_potential: 2800,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        health_situation: {
+          current_insurance: 'Mutuelle B',
+          health_issues: ['Optique'],
+          budget_range: 'Standard (50-100€)',
+          urgency_level: 'low'
+        }
+      },
+      {
+        id: '4',
+        name: 'Sophie Senior',
+        email: 'sophie.senior@email.com',
+        phone: '0123456792',
+        company: 'Retraitée',
+        age: 69,
+        segment: 'Senior',
+        score: 88,
+        status: 'Qualifié',
+        source: 'GoogleSheets',
+        revenue_potential: 3900,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        health_situation: {
+          current_insurance: 'Mutuelle C',
+          health_issues: ['Dentaire', 'Hospitalisation'],
+          budget_range: 'Premium (>100€)',
+          urgency_level: 'medium'
+        }
+      },
+      {
+        id: '5',
+        name: 'Robert Martin',
+        email: 'robert.martin@email.com',
+        phone: '0123456793',
+        company: 'Retraité',
+        age: 74,
+        segment: 'Senior',
+        score: 79,
+        status: 'Converti',
+        source: 'Manuel',
+        revenue_potential: 4500,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        health_situation: {
+          current_insurance: 'Mutuelle Premium',
+          health_issues: ['Optique', 'Dentaire', 'Hospitalisation'],
+          budget_range: 'Premium (>100€)',
+          urgency_level: 'low'
+        }
+      }
+    ]
+
+    setTimeout(() => {
+      setProspects(mockProspects)
+      setLoading(false)
+    }, 500)
+  }, [])
 
   const createProspect = async (prospect: Omit<Prospect, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const { data, error } = await supabase
-        .from('prospects')
-        .insert([prospect])
-        .select()
-        .single()
-      
-      if (error) throw error
-      setProspects(prev => [data, ...prev])
-      return { data, error: null }
-    } catch (error) {
-      console.error('Erreur lors de la création du prospect:', error)
-      return { data: null, error }
+    const newProspect: Prospect = {
+      ...prospect,
+      id: Date.now().toString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
+    setProspects(prev => [newProspect, ...prev])
+    return { data: newProspect, error: null }
   }
 
   const updateProspect = async (id: string, updates: Partial<Prospect>) => {
-    try {
-      const { data, error } = await supabase
-        .from('prospects')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-      
-      if (error) throw error
-      setProspects(prev => prev.map(p => p.id === id ? data : p))
-      return { data, error: null }
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du prospect:', error)
-      return { data: null, error }
-    }
+    setProspects(prev => prev.map(p => 
+      p.id === id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p
+    ))
+    return { data: null, error: null }
   }
 
   const deleteProspect = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('prospects')
-        .delete()
-        .eq('id', id)
-      
-      if (error) throw error
-      setProspects(prev => prev.filter(p => p.id !== id))
-      return { error: null }
-    } catch (error) {
-      console.error('Erreur lors de la suppression du prospect:', error)
-      return { error }
-    }
+    setProspects(prev => prev.filter(p => p.id !== id))
+    return { error: null }
   }
 
   return {
@@ -168,154 +258,34 @@ export function useProspects() {
     createProspect,
     updateProspect,
     deleteProspect,
-    reloadProspects: loadProspects,
+    reloadProspects: () => {},
   }
 }
 
 // Hook pour les opportunités
 export function useOpportunities() {
   const [opportunities, setOpportunities] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
-
-  const loadOpportunities = async () => {
-    if (!user) return
-    
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('opportunities')
-        .select(`
-          *,
-          prospects (*)
-        `)
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      setOpportunities(data || [])
-    } catch (error) {
-      console.error('Erreur lors du chargement des opportunités:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (user) {
-      loadOpportunities()
-    }
-  }, [user])
-
-  const createOpportunity = async (opportunity: Omit<Opportunity, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const { data, error } = await supabase
-        .from('opportunities')
-        .insert([opportunity])
-        .select()
-        .single()
-      
-      if (error) throw error
-      await loadOpportunities()
-      return { data, error: null }
-    } catch (error) {
-      console.error('Erreur lors de la création de l\'opportunité:', error)
-      return { data: null, error }
-    }
-  }
-
-  const updateOpportunity = async (id: string, updates: Partial<Opportunity>) => {
-    try {
-      const { data, error } = await supabase
-        .from('opportunities')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-      
-      if (error) throw error
-      await loadOpportunities()
-      return { data, error: null }
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de l\'opportunité:', error)
-      return { data: null, error }
-    }
-  }
+  const [loading, setLoading] = useState(false)
 
   return {
     opportunities,
     loading,
-    createOpportunity,
-    updateOpportunity,
-    reloadOpportunities: loadOpportunities,
+    createOpportunity: async () => ({ data: null, error: null }),
+    updateOpportunity: async () => ({ data: null, error: null }),
+    reloadOpportunities: () => {},
   }
 }
 
 // Hook pour les campagnes marketing
 export function useMarketingCampaigns() {
-  const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const loadCampaigns = async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('marketing_campaigns')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      setCampaigns(data || [])
-    } catch (error) {
-      console.error('Erreur lors du chargement des campagnes:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadCampaigns()
-  }, [])
-
-  const createCampaign = async (campaign: Omit<MarketingCampaign, 'id' | 'created_at'>) => {
-    try {
-      const { data, error } = await supabase
-        .from('marketing_campaigns')
-        .insert([campaign])
-        .select()
-        .single()
-      
-      if (error) throw error
-      setCampaigns(prev => [data, ...prev])
-      return { data, error: null }
-    } catch (error) {
-      console.error('Erreur lors de la création de la campagne:', error)
-      return { data: null, error }
-    }
-  }
-
-  const updateCampaign = async (id: string, updates: Partial<MarketingCampaign>) => {
-    try {
-      const { data, error } = await supabase
-        .from('marketing_campaigns')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-      
-      if (error) throw error
-      setCampaigns(prev => prev.map(c => c.id === id ? data : c))
-      return { data, error: null }
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de la campagne:', error)
-      return { data: null, error }
-    }
-  }
+  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
 
   return {
     campaigns,
     loading,
-    createCampaign,
-    updateCampaign,
-    reloadCampaigns: loadCampaigns,
+    createCampaign: async () => ({ data: null, error: null }),
+    updateCampaign: async () => ({ data: null, error: null }),
+    reloadCampaigns: () => {},
   }
 }

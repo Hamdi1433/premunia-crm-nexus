@@ -1,36 +1,39 @@
+'use client'
 
-"use client";
+import React from 'react'
+import { useAuth } from '@/hooks/useSupabase'
+import LoginForm from '@/components/Auth/LoginForm'
+import PremuniaLayout from '@/components/Layout/PremuniaLayout'
 
-import { useAuth } from '@/components/auth/AuthProvider';
-import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+export default function Index() {
+  const { user, loading, signIn } = useAuth()
 
-const Index = () => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading) {
-      if (user) {
-        navigate('/dashboard');
-      } else {
-        navigate('/login');
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const { error } = await signIn(email, password)
+      if (error) {
+        console.error('Erreur de connexion:', error)
       }
+    } catch (error) {
+      console.error('Erreur lors de la connexion:', error)
     }
-  }, [user, loading, navigate]);
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-xl text-muted-foreground mt-4">Chargement de Premunia CRM...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800">Premunia CRM</h2>
+          <p className="text-gray-600">Chargement en cours...</p>
         </div>
       </div>
-    );
+    )
   }
 
-  return null;
-};
+  if (!user) {
+    return <LoginForm onLogin={handleLogin} />
+  }
 
-export default Index;
+  return <PremuniaLayout />
+}
